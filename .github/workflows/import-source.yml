@@ -1,0 +1,38 @@
+name: Import Glotok source archive
+
+on:
+  push:
+    paths:
+      - "glotok-next-stage.zip"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  import-source:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+
+      - name: Validate archive
+        run: |
+          test -f glotok-next-stage.zip
+          unzip -t glotok-next-stage.zip
+          unzip -q glotok-next-stage.zip -d /tmp/glotok-source
+          test -d /tmp/glotok-source/glotok-next-stage
+
+      - name: Copy source files to repository root
+        run: |
+          cp -a /tmp/glotok-source/glotok-next-stage/. .
+          rm -f glotok-next-stage.zip
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Import complete Glotok source"
+            git push
+          fi
